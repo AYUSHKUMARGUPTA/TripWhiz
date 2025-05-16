@@ -1,84 +1,102 @@
-import { type RequestHandler } from 'express';
-import axios from 'axios';
-import { getCalendarClient } from '../utils/googleAuth';
+import { Request, Response } from 'express';
+import Trip from '../models/Trip';
+import { generateTripPlan } from '../utils/gemini';
 import { fetchGoogleMapsLink, fetchYouTubeVideoLink, fetchImageLink } from '../utils/enrichPlace';
 
-const createCalendarEvents = async (itinerary: any, token: any) => {
-  const calendar = getCalendarClient(token);
+interface TripAdviseRequest {
+  destination: string;
+  duration: number;
+  preferences: string[];
+  budget: number;
+}
 
-  for (const event of itinerary) {
-    const { place, date_time, location } = event;
+interface Activity {
+  name: string;
+  description: string;
+  estimatedCost: number;
+  duration: number;
+  timeSlot: string;
+  mapsLink?: string;
+  videoLink?: string;
+  imageLink?: string;
+}
 
-    await calendar.events.insert({
-      calendarId: 'primary',
-      requestBody: {
-        summary: place,
-        location,
-        description: `Part of your AI-generated trip itinerary`,
-        start: { dateTime: date_time, timeZone: 'America/Los_Angeles' },
-        end: {
-          dateTime: new Date(new Date(date_time).getTime() + 2 * 60 * 60 * 1000).toISOString(),
-          timeZone: 'America/Los_Angeles',
-        },
-      },
-    });
-  }
-};
+interface DayPlan {
+  day: number;
+  activities: Activity[];
+}
 
-const tripAdvise: RequestHandler = async (req, res) => {
-  const { name, destination, startDate, endDate, preferences, googleCalendarSync } = req.body;
+interface TripPlan {
+  userId: string;
+  destination: string;
+  duration: number;
+  preferences: string[];
+  budget: number;
+  suggestions: DayPlan[];
+  totalEstimatedCost: number;
+  warnings: string[];
+}
 
-  const prompt = `
-  Create a day-by-day itinerary for ${name}, visiting ${destination} from ${startDate} to ${endDate}.
-  They enjoy ${preferences.join(', ')}.
-  
-  For each activity, provide:
-  - "place": Name of the place or activity
-  - "date_time": Scheduled date and time in "YYYY-MM-DD HH:MM" format
-  
-  Output only a raw JSON array. No markdown, no explanations.
-  `;
-
+const tripAdvise = async (req: Request<{}, {}, TripAdviseRequest>, res: Response) => {
   try {
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      },
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+    const { destination, duration, preferences, budget } = req.body;
+    const userId = req.session?.userId || 'anonymous';
 
-    const candidates = response.data.candidates;
-    let content = candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+    // Generate trip plan using Gemini API
+    const generatedPlan = await generateTripPlan(destination, duration, preferences, budget);
 
-    content = content.trim().replace(/^```json\n?/, '').replace(/```$/, '');
-
-    const basicItinerary = JSON.parse(content);
-
-    // Enrich each place
-    const enrichedItinerary = await Promise.all(
-      basicItinerary.map(async (item: any) => {
-        const location = await fetchGoogleMapsLink(item.place);
-        const youtube = await fetchYouTubeVideoLink(item.place);
-        const image = await fetchImageLink(item.place);
-
-        return {
-          ...item,
-          location,
-          youtube,
-          image,
-        };
-      })
-    );
-
-    res.json({ itinerary: enrichedItinerary });
-
-    if (googleCalendarSync && req.session?.tokens) {
-      await createCalendarEvents(enrichedItinerary, req.session.tokens);
+    if (!generatedPlan.success) {
+      throw new Error('Failed to generate trip plan');
     }
-  } catch (error: any) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to generate itinerary' });
+
+    // Parse the generated plan and create a structured response
+    const tripPlan: TripPlan = {
+      userId,
+      destination,
+      duration,
+      preferences,
+      budget,
+      suggestions: [
+        {
+          day: 1,
+          activities: [
+            {
+              name: "Sample Activity",
+              description: "This is a sample activity",
+              estimatedCost: 50,
+              duration: 120, // 2 hours
+              timeSlot: "10:00 AM"
+            }
+          ]
+        }
+      ],
+      totalEstimatedCost: 50,
+      warnings: []
+    };
+
+    // Enrich the plan with additional information
+    for (const day of tripPlan.suggestions) {
+      for (const activity of day.activities) {
+        const [mapsLink, videoLink, imageLink] = await Promise.all([
+          fetchGoogleMapsLink(activity.name),
+          fetchYouTubeVideoLink(activity.name),
+          fetchImageLink(activity.name)
+        ]);
+
+        activity.mapsLink = mapsLink;
+        activity.videoLink = videoLink;
+        activity.imageLink = imageLink;
+      }
+    }
+
+    // Save the trip plan to MongoDB
+    const trip = new Trip(tripPlan);
+    await trip.save();
+
+    res.json(trip);
+  } catch (error) {
+    console.error('Error in tripAdvise:', error);
+    res.status(500).json({ error: 'Failed to generate trip advice' });
   }
 };
 

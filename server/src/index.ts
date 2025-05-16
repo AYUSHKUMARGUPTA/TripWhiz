@@ -1,27 +1,46 @@
-import app from './utils/app' // (server)
-import mongo from './utils/mongo' // (database)
-import { PORT } from './constants/index'
-import authRoutes from './routes/auth'
+import dotenv from 'dotenv';
+// Load environment variables first
+dotenv.config();
+
+import express from 'express';
+import cors from 'cors';
+import session from 'express-session';
+import connectDB from './config/db';
 import apiRoutes from './routes/api';
 
-const bootstrap = async () => {
-  await mongo.connect()
+// Connect to MongoDB
+connectDB();
 
-  app.get('/', (req, res) => {
-    res.status(200).send('Hello, world!')
-  })
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-  app.get('/healthz', (req, res) => {
-    res.status(204).end()
-  })
+// Middleware
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3001',
+  credentials: true
+}));
 
-  app.use('/auth', authRoutes);
+app.use(express.json());
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
-  app.use('/api', apiRoutes);
+// Routes
+app.use('/api', apiRoutes);
 
-  app.listen(PORT, () => {
-    console.log(`✅ Server is listening on port: ${PORT}`)
-  })
-}
+// Error handling middleware
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
 
-bootstrap()
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
