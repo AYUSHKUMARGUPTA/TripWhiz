@@ -1,25 +1,26 @@
 import { type RequestHandler } from 'express';
 import axios from 'axios';
-import { getCalendarClient } from '../utils/googleAuth';
+import { getCalendarClient, getServiceAccountCalendar } from '../utils/googleAuth';
 import { fetchGoogleMapsLink, fetchYouTubeVideoLink, fetchImageLink } from '../utils/enrichPlace';
 
-const createCalendarEvents = async (itinerary: any, token: any) => {
-  const calendar = getCalendarClient(token);
-
+const createCalendarEvents = async (itinerary: any) => {
+  // const calendar = getCalendarClient(token);
+  const calendar = getServiceAccountCalendar();
+  const calendarId = '37f9a1c74fadd388a403a74241e4c56b2c344cb72e0509d797d6a32a765475ff@group.calendar.google.com';
   for (const event of itinerary) {
     const { place, date_time, location } = event;
-
+    // Convert "YYYY-MM-DD HH:MM" to RFC3339
+    // Assume date_time is in local time, convert to ISO string
+    const startDate = new Date(date_time.replace(' ', 'T'));
+    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
     await calendar.events.insert({
-      calendarId: 'primary',
+      calendarId,
       requestBody: {
         summary: place,
         location,
         description: `Part of your AI-generated trip itinerary`,
-        start: { dateTime: date_time, timeZone: 'America/Los_Angeles' },
-        end: {
-          dateTime: new Date(new Date(date_time).getTime() + 2 * 60 * 60 * 1000).toISOString(),
-          timeZone: 'America/Los_Angeles',
-        },
+        start: { dateTime: startDate.toISOString(), timeZone: 'America/Los_Angeles' },
+        end: { dateTime: endDate.toISOString(), timeZone: 'America/Los_Angeles' },
       },
     });
   }
@@ -71,11 +72,17 @@ const tripAdvise: RequestHandler = async (req, res) => {
       })
     );
 
-    res.json({ itinerary: enrichedItinerary });
 
-    if (googleCalendarSync && req.session?.tokens) {
-      await createCalendarEvents(enrichedItinerary, req.session.tokens);
+
+    if (googleCalendarSync) {
+      try {
+        await createCalendarEvents(enrichedItinerary);
+      } catch (calendarError) {
+        console.error('Calendar sync failed:', calendarError);
+        // Optionally, you can add a flag to the response to indicate calendar sync failed
+      }
     }
+    res.json({ itinerary: enrichedItinerary });
   } catch (error: any) {
     console.error(error.response?.data || error.message);
     res.status(500).json({ error: 'Failed to generate itinerary' });
