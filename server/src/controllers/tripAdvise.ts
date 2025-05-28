@@ -1,10 +1,9 @@
 import { type RequestHandler } from 'express';
 import axios from 'axios';
-import { getCalendarClient, getServiceAccountCalendar } from '../utils/googleAuth';
+import { getServiceAccountCalendar } from '../utils/googleAuth';
 import { fetchGoogleMapsLink, fetchYouTubeVideoLink, fetchImageLink } from '../utils/enrichPlace';
 
 const createCalendarEvents = async (itinerary: any) => {
-  // const calendar = getCalendarClient(token);
   const calendar = getServiceAccountCalendar();
   const calendarId = '37f9a1c74fadd388a403a74241e4c56b2c344cb72e0509d797d6a32a765475ff@group.calendar.google.com';
   for (const event of itinerary) {
