@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Button } from 'react-native';
-import GeminiChat from '../../components/GeminiChat';
+import GeminiChatForm from '../../components/GeminiChatForm';
 import { useRouter } from 'expo-router';
 
 export default function Home() {
@@ -24,7 +24,7 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      <GeminiChat onComplete={handleTripComplete} />
+      <GeminiChatForm onComplete={handleTripComplete} />
       {userData && (
             <View style={styles.buttonContainer}>
             <Button title="Submit Trip Data" onPress={handleSubmit} color="#007AFF"/>
