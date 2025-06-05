@@ -9,7 +9,10 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { format } from "date-fns";
 
 interface Props {
   onComplete: (userData: any) => void;
@@ -18,8 +21,10 @@ interface Props {
 const GeminiChatForm = ({ onComplete }: Props) => {
   const [name, setName] = useState("");
   const [destination, setDestination] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   const [preferences, setPreferences] = useState("");
   const [googleCalendarSync, setGoogleCalendarSync] = useState(false);
 
@@ -27,8 +32,8 @@ const GeminiChatForm = ({ onComplete }: Props) => {
     const userData = {
       name,
       destination,
-      startDate,
-      endDate,
+      startDate: startDate ? format(startDate, "MM/dd/yyyy") : "",
+      endDate: endDate ? format(endDate, "MM/dd/yyyy") : "",
       preferences: preferences.split(",").map((pref) => pref.trim()),
       googleCalendarSync: googleCalendarSync ? "Yes" : "No",
     };
@@ -41,12 +46,12 @@ const GeminiChatForm = ({ onComplete }: Props) => {
       style={styles.wrapper}
     >
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Trip Planner Form</Text>
+        <Text style={styles.title}>🧳 Plan Your Trip</Text>
 
-        <Text style={styles.label}>Name</Text>
+        <Text style={styles.label}>Full Name</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter your name"
+          placeholder="e.g. John Doe"
           value={name}
           onChangeText={setName}
         />
@@ -54,31 +59,57 @@ const GeminiChatForm = ({ onComplete }: Props) => {
         <Text style={styles.label}>Destination</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter destination"
+          placeholder="e.g. Paris, Tokyo"
           value={destination}
           onChangeText={setDestination}
         />
 
-        <Text style={styles.label}>Start Date (MM/DD/YYYY)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. 06/10/2025"
-          value={startDate}
-          onChangeText={setStartDate}
-        />
+        <Text style={styles.label}>Start Date</Text>
+        <TouchableOpacity
+          onPress={() => setShowStartPicker(true)}
+          style={styles.dateInput}
+        >
+          <Text style={styles.dateText}>
+            {startDate ? format(startDate, "MM/dd/yyyy") : "Select start date"}
+          </Text>
+        </TouchableOpacity>
+        {showStartPicker && (
+          <DateTimePicker
+            value={startDate || new Date()}
+            mode="date"
+            display="calendar"
+            onChange={(e, selectedDate) => {
+              setShowStartPicker(false);
+              if (selectedDate) setStartDate(selectedDate);
+            }}
+          />
+        )}
 
-        <Text style={styles.label}>End Date (MM/DD/YYYY)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. 06/20/2025"
-          value={endDate}
-          onChangeText={setEndDate}
-        />
+        <Text style={styles.label}>End Date</Text>
+        <TouchableOpacity
+          onPress={() => setShowEndPicker(true)}
+          style={styles.dateInput}
+        >
+          <Text style={styles.dateText}>
+            {endDate ? format(endDate, "MM/dd/yyyy") : "Select end date"}
+          </Text>
+        </TouchableOpacity>
+        {showEndPicker && (
+          <DateTimePicker
+            value={endDate || new Date()}
+            mode="date"
+            display="calendar"
+            onChange={(e, selectedDate) => {
+              setShowEndPicker(false);
+              if (selectedDate) setEndDate(selectedDate);
+            }}
+          />
+        )}
 
-        <Text style={styles.label}>Preferences (comma separated)</Text>
+        <Text style={styles.label}>Preferences</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Food, Adventure"
+          placeholder="e.g. Beaches, Adventure, Food"
           value={preferences}
           onChangeText={setPreferences}
         />
@@ -88,10 +119,14 @@ const GeminiChatForm = ({ onComplete }: Props) => {
           <Switch
             value={googleCalendarSync}
             onValueChange={setGoogleCalendarSync}
+            thumbColor={googleCalendarSync ? "#fff" : "#888"}
+            trackColor={{ true: "#007AFF", false: "#ccc" }}
           />
         </View>
 
-        <Button title="Submit Trip Data" onPress={handleSubmit} color="#007AFF" />
+        <View style={styles.buttonWrapper}>
+          <Button title="Submit Trip Details" onPress={handleSubmit} color="#007AFF" />
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -100,33 +135,56 @@ const GeminiChatForm = ({ onComplete }: Props) => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f7f9fc",
   },
   container: {
     padding: 20,
+    paddingBottom: 100,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
+    fontSize: 26,
+    fontWeight: "700",
+    marginBottom: 25,
     textAlign: "center",
+    color: "#333",
   },
   label: {
     fontSize: 16,
-    marginTop: 15,
+    marginTop: 20,
+    color: "#444",
   },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    padding: 10,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 10,
     marginTop: 5,
+    backgroundColor: "#fff",
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    marginTop: 5,
+    backgroundColor: "#fff",
+  },
+  dateText: {
+    fontSize: 16,
+    color: "#333",
   },
   switchContainer: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    marginVertical: 20,
+    alignItems: "center",
+    marginTop: 25,
+    paddingVertical: 10,
+  },
+  buttonWrapper: {
+    marginTop: 30,
+    borderRadius: 10,
+    overflow: "hidden",
   },
 });
 
