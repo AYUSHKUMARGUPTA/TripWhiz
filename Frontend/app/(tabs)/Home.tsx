@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Button } from 'react-native';
+import { SafeAreaView, StyleSheet, Text } from 'react-native';
 import GeminiChatForm from '../../components/GeminiChatForm';
 import { useRouter } from 'expo-router';
 
@@ -10,6 +10,7 @@ export default function Home() {
   const handleTripComplete = (data: any) => {
     console.log("Collected User Data:", data);
     setUserData(data);
+    handleSubmit()
   };
   const handleSubmit = () => {
     if (userData) {
@@ -23,15 +24,10 @@ export default function Home() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      {/* <Text>Plan your trip</Text> */}
       <GeminiChatForm onComplete={handleTripComplete} />
-      {userData && (
-            <View style={styles.buttonContainer}>
-            <Button title="Submit Trip Data" onPress={handleSubmit} color="#007AFF"/>
-            </View>
-      )}
-  
-    </View>
+    </SafeAreaView>
   );
 }
 

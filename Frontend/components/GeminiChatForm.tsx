@@ -11,7 +11,7 @@ import {
   Platform,
   TouchableOpacity,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DatePicker from "react-native-date-picker";
 import { format } from "date-fns";
 
 interface Props {
@@ -21,8 +21,8 @@ interface Props {
 const GeminiChatForm = ({ onComplete }: Props) => {
   const [name, setName] = useState("");
   const [destination, setDestination] = useState("");
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [preferences, setPreferences] = useState("");
@@ -32,8 +32,8 @@ const GeminiChatForm = ({ onComplete }: Props) => {
     const userData = {
       name,
       destination,
-      startDate: startDate ? format(startDate, "MM/dd/yyyy") : "",
-      endDate: endDate ? format(endDate, "MM/dd/yyyy") : "",
+      startDate: format(startDate, "MM/dd/yyyy"),
+      endDate: format(endDate, "MM/dd/yyyy"),
       preferences: preferences.split(",").map((pref) => pref.trim()),
       googleCalendarSync: googleCalendarSync ? "Yes" : "No",
     };
@@ -73,17 +73,18 @@ const GeminiChatForm = ({ onComplete }: Props) => {
             {startDate ? format(startDate, "MM/dd/yyyy") : "Select start date"}
           </Text>
         </TouchableOpacity>
-        {showStartPicker && (
-          <DateTimePicker
-            value={startDate || new Date()}
-            mode="date"
-            display="calendar"
-            onChange={(e, selectedDate) => {
-              setShowStartPicker(false);
-              if (selectedDate) setStartDate(selectedDate);
-            }}
-          />
-        )}
+
+        {/* <DatePicker
+          modal
+          open={showStartPicker}
+          date={startDate}
+          mode="date"
+          onConfirm={(date) => {
+            setShowStartPicker(false);
+            setStartDate(date);
+          }}
+          onCancel={() => setShowStartPicker(false)}
+        /> */}
 
         <Text style={styles.label}>End Date</Text>
         <TouchableOpacity
@@ -94,17 +95,18 @@ const GeminiChatForm = ({ onComplete }: Props) => {
             {endDate ? format(endDate, "MM/dd/yyyy") : "Select end date"}
           </Text>
         </TouchableOpacity>
-        {showEndPicker && (
-          <DateTimePicker
-            value={endDate || new Date()}
-            mode="date"
-            display="calendar"
-            onChange={(e, selectedDate) => {
-              setShowEndPicker(false);
-              if (selectedDate) setEndDate(selectedDate);
-            }}
-          />
-        )}
+
+        {/* <DatePicker
+          modal
+          open={showEndPicker}
+          date={endDate}
+          mode="date"
+          onConfirm={(date) => {
+            setShowEndPicker(false);
+            setEndDate(date);
+          }}
+          onCancel={() => setShowEndPicker(false)}
+        /> */}
 
         <Text style={styles.label}>Preferences</Text>
         <TextInput
