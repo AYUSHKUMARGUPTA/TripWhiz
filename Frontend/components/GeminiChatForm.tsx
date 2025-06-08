@@ -11,9 +11,9 @@ import {
   Platform,
   TouchableOpacity,
 } from "react-native";
-import DatePicker from "react-native-date-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
-
+import { Modal } from "react-native";
 interface Props {
   onComplete: (userData: any) => void;
 }
@@ -21,8 +21,13 @@ interface Props {
 const GeminiChatForm = ({ onComplete }: Props) => {
   const [name, setName] = useState("");
   const [destination, setDestination] = useState("");
+  const [endDate, setEndDate] = useState(() => {
+    const defaultEnd = new Date();
+    defaultEnd.setDate(defaultEnd.getDate() + 2);
+    return defaultEnd;
+  });
   const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  // const [endDate, setEndDate] = useState<Date>(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [preferences, setPreferences] = useState("");
@@ -74,17 +79,38 @@ const GeminiChatForm = ({ onComplete }: Props) => {
           </Text>
         </TouchableOpacity>
 
-        {/* <DatePicker
-          modal
-          open={showStartPicker}
-          date={startDate}
-          mode="date"
-          onConfirm={(date) => {
-            setShowStartPicker(false);
-            setStartDate(date);
-          }}
-          onCancel={() => setShowStartPicker(false)}
-        /> */}
+        <Modal
+          transparent
+          animationType="fade"
+          visible={showStartPicker}
+          onRequestClose={() => setShowStartPicker(false)}
+        >
+          <View style={styles.modalBackground}>
+            <View style={styles.modalContainer}>
+              <DateTimePicker
+                value={startDate}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  if (Platform.OS !== "ios") {
+                    setShowStartPicker(false);
+                  }
+                  if (selectedDate) {
+                    setStartDate(selectedDate);
+                  }
+                }}
+              />
+              {Platform.OS === "ios" && (
+                <TouchableOpacity
+                  style={styles.doneButton}
+                  onPress={() => setShowStartPicker(false)}
+                >
+                  <Text style={styles.doneText}>Done</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Modal>
 
         <Text style={styles.label}>End Date</Text>
         <TouchableOpacity
@@ -96,17 +122,38 @@ const GeminiChatForm = ({ onComplete }: Props) => {
           </Text>
         </TouchableOpacity>
 
-        {/* <DatePicker
-          modal
-          open={showEndPicker}
-          date={endDate}
-          mode="date"
-          onConfirm={(date) => {
-            setShowEndPicker(false);
-            setEndDate(date);
-          }}
-          onCancel={() => setShowEndPicker(false)}
-        /> */}
+        <Modal
+          transparent
+          animationType="fade"
+          visible={showEndPicker}
+          onRequestClose={() => setShowEndPicker(false)}
+        >
+          <View style={styles.modalBackground}>
+            <View style={styles.modalContainer}>
+              <DateTimePicker
+                value={endDate}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  if (Platform.OS !== "ios") {
+                    setShowEndPicker(false);
+                  }
+                  if (selectedDate) {
+                    setEndDate(selectedDate);
+                  }
+                }}
+              />
+              {Platform.OS === "ios" && (
+                <TouchableOpacity
+                  style={styles.doneButton}
+                  onPress={() => setShowEndPicker(false)}
+                >
+                  <Text style={styles.doneText}>Done</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Modal>
 
         <Text style={styles.label}>Preferences</Text>
         <TextInput
@@ -126,9 +173,9 @@ const GeminiChatForm = ({ onComplete }: Props) => {
           />
         </View>
 
-        <View style={styles.buttonWrapper}>
-          <Button title="Submit Trip Details" onPress={handleSubmit} color="#007AFF" />
-        </View>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Text style={styles.submitButtonText}>Submit Trip Details</Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -187,6 +234,42 @@ const styles = StyleSheet.create({
     marginTop: 30,
     borderRadius: 10,
     overflow: "hidden",
+  },
+  modalBackground: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+  },
+  modalContainer: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    width: "85%",
+    alignItems: "center",
+  },
+  doneButton: {
+    marginTop: 15,
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  doneText: {
+    color: "#fff",
+    fontSize: 16,
+  },
+  submitButton: {
+    marginTop: 30,
+    backgroundColor: "#007AFF",
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
 

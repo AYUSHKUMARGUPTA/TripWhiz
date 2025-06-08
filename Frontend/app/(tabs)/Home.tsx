@@ -10,14 +10,14 @@ export default function Home() {
   const handleTripComplete = (data: any) => {
     console.log("Collected User Data:", data);
     setUserData(data);
-    handleSubmit()
+    handleSubmit(data)
   };
-  const handleSubmit = () => {
-    if (userData) {
+  const handleSubmit = (data: any) => {
+    if (data) {
       router.push({
         pathname: '/SummaryScreen',
         params: {
-          userData: JSON.stringify(userData)  // Pass as string, safer for URL params
+          userData: JSON.stringify(data)  // Pass as string, safer for URL params
         },
       });
     }
@@ -25,7 +25,6 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* <Text>Plan your trip</Text> */}
       <GeminiChatForm onComplete={handleTripComplete} />
     </SafeAreaView>
   );

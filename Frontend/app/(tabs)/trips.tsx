@@ -66,7 +66,7 @@ export default function TripsScreen() {
           <Text>{item.user?.startDate} - {item.user?.endDate}</Text>
         </TouchableOpacity>
       )}
-      contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+      contentContainerStyle={{ padding: 20, paddingBottom: 40, paddingTop: 60 }}
 
     />
   );

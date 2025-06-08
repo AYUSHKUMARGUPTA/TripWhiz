@@ -86,6 +86,8 @@ export default function SummaryScreen({ route }: any) {
   useEffect(() => {
     if (!params.itinerary) {
       sendTripData();
+    }else{
+      setLoading(false); // Stop loader if itinerary is already provided
     }
   }, []);
 
